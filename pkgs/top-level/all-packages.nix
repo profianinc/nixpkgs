@@ -23374,6 +23374,9 @@ with pkgs;
   linuxPackages_xanmod_tt = linuxKernel.packages.linux_xanmod_tt;
   linux_xanmod_tt = linuxKernel.kernels.linux_xanmod_tt;
 
+  # Enarx kernel
+  linuxPackages_enarx = linuxKernel.packages.linux_enarx;
+
   cryptodev = linuxKernel.packages.linux_4_9.cryptodev;
 
   dpdk = callPackage ../os-specific/linux/dpdk {
