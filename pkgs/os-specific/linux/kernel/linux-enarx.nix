@@ -29,6 +29,8 @@ buildLinux (args // rec {
     INTEL_TURBO_MAX_3 = yes;
     INTEL_TXT = yes;
     KVM_AMD_SEV = yes;
+    MODULE_COMPRESS_NONE = yes;
+    MODULE_COMPRESS_XZ = lib.mkForce no;
     MODVERSIONS = yes;
     PACKET = yes;
     SECURITY_DMESG_RESTRICT = yes;
