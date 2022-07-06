@@ -221,6 +221,13 @@ in {
       ];
     }).lqx;
 
+    linux_enarx = callPackage ../os-specific/linux/kernel/linux-enarx.nix {
+      kernelPatches = [
+        kernelPatches.bridge_stp_helper
+        kernelPatches.request_key_helper
+      ];
+    };
+
     # This contains the variants of the XanMod kernel
     xanmodKernels = callPackage ../os-specific/linux/kernel/xanmod-kernels.nix {
       kernelPatches = [
@@ -557,6 +564,8 @@ in {
     linux_xanmod = recurseIntoAttrs (packagesFor kernels.linux_xanmod);
     linux_xanmod_latest = recurseIntoAttrs (packagesFor kernels.linux_xanmod_latest);
     linux_xanmod_tt = recurseIntoAttrs (packagesFor kernels.linux_xanmod_tt);
+
+    linux_enarx = recurseIntoAttrs (packagesFor kernels.linux_enarx);
 
     hardkernel_4_14 = recurseIntoAttrs (packagesFor kernels.linux_hardkernel_4_14);
 
