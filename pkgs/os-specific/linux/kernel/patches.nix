@@ -103,4 +103,13 @@
     name = "mac_nvme_t2";
     patch = ./mac-nvme-t2.patch;
   };
+
+  enarx = rec {
+    name = "enarx";
+    patch = fetchpatch {
+      name = "${name}.patch";
+      url = "https://github.com/enarx/linux/compare/v5.19..v5.19-enarx-4.patch";
+      sha256 = "sha256-MdkJUHAGtVnFQRu3t8EtLjk8ywCGU82SoEi39MDyjNw=";
+    };
+  };
 }
