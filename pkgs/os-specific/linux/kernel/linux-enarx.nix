@@ -19,7 +19,7 @@ buildLinux (args // rec {
     AMD_IOMMU_V2 = yes;
     AMD_MEM_ENCRYPT = yes;
     CRYPTO = yes;
-    CRYPTO_DEV_CCP = yes;
+    CRYPTO_DEV_CCP = module;
     CRYPTO_DEV_CCP_CRYPTO = yes;
     CRYPTO_DEV_CCP_DD = yes;
     CRYPTO_DEV_SP_CCP = yes;
