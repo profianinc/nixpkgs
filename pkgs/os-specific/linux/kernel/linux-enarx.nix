@@ -25,6 +25,7 @@ buildLinux (args // rec {
     CRYPTO_DEV_SP_CCP = yes;
     CRYPTO_DEV_SP_PSP = yes;
     DMADEVICES = yes;
+    FW_LOADER_COMPRESS = yes;
     GART_IOMMU = yes;
     HIGH_RES_TIMERS = yes;
     INIT_ON_ALLOC_DEFAULT_ON = yes;
