@@ -1,16 +1,16 @@
 # Adapted from linux-testing
-{ lib, fetchurl, buildLinux, ... } @ args:
+{ lib, buildLinux, ... } @ args:
 
 with lib;
 
 buildLinux (args // rec {
-  version = "5.18-rc3-enarx-6";
-  modDirVersion = "5.18.0-rc3-next-20220422";
+  version = "5.19-rc5-enarx-5";
+  modDirVersion = "5.19.0-rc5-next-20220706";
   extraMeta.branch = lib.versions.majorMinor version;
 
-  src = fetchurl {
+  src = builtins.fetchTarball {
     url = "https://github.com/enarx/linux/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256-UwhkdxmDuioT2gZzya7Tk5rCqDl+y3G2c9E0n1Su3t0=";
+    sha256 = "10z9qsyav0q2xyv9mjk9r64yw58pk3xcangwaz1n2gy5k8g68a9i";
   };
 
   structuredExtraConfig = with lib.kernel; {
@@ -20,12 +20,11 @@ buildLinux (args // rec {
     AMD_MEM_ENCRYPT = yes;
     CRYPTO = yes;
     CRYPTO_DEV_CCP = yes;
-    CRYPTO_DEV_CCP_CRYPTO = yes;
-    CRYPTO_DEV_CCP_DD = yes;
+    CRYPTO_DEV_CCP_CRYPTO = module;
+    CRYPTO_DEV_CCP_DD = module;
     CRYPTO_DEV_SP_CCP = yes;
     CRYPTO_DEV_SP_PSP = yes;
     DMADEVICES = yes;
-    FW_LOADER_COMPRESS = yes;
     GART_IOMMU = yes;
     HIGH_RES_TIMERS = yes;
     INIT_ON_ALLOC_DEFAULT_ON = yes;
@@ -37,9 +36,9 @@ buildLinux (args // rec {
     IOMMU_HELPER = yes;
     IOMMU_SVA = yes;
     KVM = yes;
-    KVM_AMD = yes;
+    KVM_AMD = module;
     KVM_AMD_SEV = yes;
-    KVM_INTEL = yes;
+    KVM_INTEL = module;
     MEMORY_FAILURE = yes;
     MODVERSIONS = yes;
     PACKET = yes;
