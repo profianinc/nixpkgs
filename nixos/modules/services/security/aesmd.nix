@@ -6,7 +6,7 @@ let
 
   sgx-psw = pkgs.sgx-psw.override { inherit (cfg) debug; };
 
-  configFile = with cfg.settings; pkgs.writeText "aesmd.conf" (
+  aesmdConfigFile = with cfg.settings; pkgs.writeText "aesmd.conf" (
     concatStringsSep "\n" (
       optional (whitelistUrl != null) "whitelist url = ${whitelistUrl}" ++
       optional (proxy != null) "aesm proxy = ${proxy}" ++
@@ -62,6 +62,110 @@ in
           description = "Attestation quote type.";
         };
       };
+    };
+    qcnl.settings = mkOption {
+      description = "QCNL configuration";
+      default = null;
+      type = with types; nullOr (submodule {
+        options.pccsUrl = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          example = "https://localhost:8081/sgx/certification/v3/";
+          description = "PCCS server address.";
+        };
+        options.useSecureCert = mkOption {
+          type = with types; nullOr bool;
+          default = null;
+          example = false;
+          description = "To accept insecure HTTPS certificate, set this option to <literal>false</literal>.";
+        };
+        options.collateralService = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          example = "https://api.trustedservices.intel.com/sgx/certification/v3/";
+          description = ''
+            You can use the Intel PCS or another PCCS to get quote verification collateral.
+
+            Retrieval of PCK Certificates will always use the PCCS described in <literal>config.services.aesmd.qcnl.settings.pccsUrl</literal>.
+
+            When <literal>null</literal>, both PCK Certs and verification collateral will be retrieved using <literal>config.services.aesmd.qcnl.settings.pccsUrl</literal>.
+          '';
+        };
+        options.pccsApiVersion = mkOption {
+          type = with types; nullOr (enum [ "3.0" "3.1" ]);
+          default = null;
+          example = "3.1";
+          description = ''
+            If you use a PCCS service to get the quote verification collateral, you can specify which PCCS API version is to be used.
+
+            The legacy 3.0 API will return CRLs in HEX encoded DER format and the sgx_ql_qve_collateral_t.version will be set to 3.0, while
+            the new 3.1 API will return raw DER format and the <literal>sgx_ql_qve_collateral_t.version</literal> will be set to 3.1.
+
+            This setting is ignored if <literal>config.services.aesmd.qcnl.settings.collateralService</literal> is set to the Intel PCS.
+            In this case, the PCCS API version is forced to be 3.1 internally.
+
+            Currently, only values of <literal>"3.0"</literal> and <literal>"3.1"</literal> are valid.
+            Note, if you set this to <literal>"3.1"</literal>, the PCCS used to retrieve verification collateral must support the new 3.1 APIs.
+          '';
+        };
+        options.retryTimes = mkOption {
+          type = with types; nullOr ints.u32;
+          default = null;
+          example = 6;
+          description = ''
+            Maximum retry times for QCNL. When <literal>null</literal> or set to <literal>0</literal>, no retry will be performed.
+
+            It will first wait one second and then for all forthcoming retries it will double the waiting time.
+
+            By using <literal>config.services.aesmd.qcnl.settings.retryDelay</literal> you disable this exponential backoff algorithm.
+          '';
+        };
+        options.retryDelay = mkOption {
+          type = with types; nullOr ints.u32;
+          default = null;
+          example = 10;
+          description = ''
+            Sleep this amount of seconds before each retry when a transfer has failed with a transient error.
+          '';
+        };
+        options.localPckUrl = mkOption {
+          type = with types; nullOr str;
+          default = null;
+          example = "http://localhost:8081/sgx/certification/v3/";
+          description = ''
+            When not <literal>null</literal>, the QCNL will try to retrieve PCK cert chain from this URL first,
+            and failover to <literal>config.services.aesmd.qcnl.settings.pccsUrl</literal> as in legacy mode.
+          '';
+        };
+        options.pckCacheExpireHours = mkOption {
+          type = with types; nullOr ints.u32;
+          default = null;
+          example = 168;
+          description = ''
+            If <literal>config.services.aesmd.qcnl.settings.localPckUrl</literal> is <literal>null</literal>, the QCNL will cache PCK certificates in memory by default.
+            The cached PCK certificates will expire after this many hours.
+          '';
+        };
+        options.customRequestOptions = mkOption {
+          type = with types; nullOr attrs;
+          default = null;
+          example = {
+            get_cert = {
+              headers = {
+                head1 = "value1";
+              };
+              params = {
+                param1 = "value1";
+                param2 = "value2";
+              };
+            };
+          };
+          description = ''
+            You can add custom request headers and parameters to the get certificate API.
+            But the default PCCS implementation just ignores them.
+          '';
+        };
+      });
     };
   };
 
@@ -148,8 +252,16 @@ in
           BindReadOnlyPaths = [
             builtins.storeDir
             # Hardcoded path AESM_CONFIG_FILE in psw/ae/aesm_service/source/utils/aesm_config.cpp
-            "${configFile}:/etc/aesmd.conf"
-          ];
+            "${aesmdConfigFile}:/etc/aesmd.conf"
+          ]
+            # Hardcoded path in qcnl https://github.com/intel/SGXDataCenterAttestationPrimitives/blob/68a77a852cd911a44a97733aec870e9bd93a3b86/QuoteGeneration/qcnl/linux/qcnl_config_impl.cpp#L112
+          ++ optional (!isNull cfg.qcnl.settings) (let
+            toSnakeCase = replaceStrings upperChars (map (s: "_${s}") lowerChars);
+            qcnlConfig = builtins.toJSON (mapAttrs' (name: value: nameValuePair (toSnakeCase name) value) (filterAttrs (n: v: !isNull v) cfg.qcnl.settings));
+            qcnlConfigFile = pkgs.writeText "sgx_default_qcnl.conf" qcnlConfig;
+          in
+            "${qcnlConfigFile}:/etc/sgx_default_qcnl.conf"
+          );
           BindPaths = [
             # Hardcoded path CONFIG_SOCKET_PATH in psw/ae/aesm_service/source/core/ipc/SocketConfig.h
             "%t/aesmd:/var/run/aesmd"
