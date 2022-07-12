@@ -1,7 +1,7 @@
 import ./make-test-python.nix ({ pkgs, lib, ... }: {
   name = "aesmd";
   meta = {
-    maintainers = with lib.maintainers; [ veehaitch ];
+    maintainers = with lib.maintainers; [ veehaitch rvolosatovs ];
   };
 
   nodes.machine = { lib, ... }: {
@@ -11,6 +11,20 @@ import ./make-test-python.nix ({ pkgs, lib, ... }: {
         defaultQuotingType = "ecdsa_256";
         proxyType = "direct";
         whitelistUrl = "http://nixos.org";
+      };
+      qcnl.settings = {
+        pccsUrl = "https://localhost:8081/sgx/certification/v3/";
+        customRequestOptions = {
+          get_cert = {
+            headers = {
+              head1 = "value1";
+            };
+            params = {
+              param1 = "value1";
+              param2 = "value2";
+            };
+          };
+        };
       };
     };
 
@@ -58,5 +72,10 @@ import ./make-test-python.nix ({ pkgs, lib, ... }: {
       aesmd_config = machine.succeed(f"nsenter -m -t {main_pid} ${pkgs.coreutils}/bin/cat /etc/aesmd.conf")
 
       assert aesmd_config == "whitelist url = http://nixos.org\nproxy type = direct\ndefault quoting type = ecdsa_256\n", "aesmd.conf differs"
+
+    with subtest("Writes and binds sgx_default_qcnl.conf in service namespace"):
+      qcnl_config = machine.succeed(f"nsenter -m -t {main_pid} ${pkgs.coreutils}/bin/cat /etc/sgx_default_qcnl.conf")
+
+      assert qcnl_config == '{"custom_request_options":{"get_cert":{"headers":{"head1":"value1"},"params":{"param1":"value1","param2":"value2"}}},"pccs_url":"https://localhost:8081/sgx/certification/v3/"}'
   '';
 })
