@@ -23,4 +23,4 @@ jobs:
       if: github.ref == 'refs/heads/nixos-22.05' && github.event_name == 'push'
       with:
         branch: gh-pages
-        folder: doc
+        folder: manual
