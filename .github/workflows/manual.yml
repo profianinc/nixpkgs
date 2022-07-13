@@ -1,0 +1,26 @@
+name: Manual
+on: [ push, pull_request ]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  manual:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: cachix/install-nix-action@v17
+    - uses: cachix/cachix-action@v10
+      with:
+        name: enarx
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - run: nix build -L -f nixos/release.nix manual.x86_64-linux
+    - run: nix run -f . coreutils -- --coreutils-prog=cp -Lr ./result/share/doc/nixos manual
+    - uses: actions/upload-artifact@v3
+      with:
+        name: manual
+        path: manual
+    - uses: JamesIves/github-pages-deploy-action@v4.2.5
+      if: github.ref == 'refs/heads/nixos-22.05' && github.event_name == 'push'
+      with:
+        branch: gh-pages
+        folder: manual
