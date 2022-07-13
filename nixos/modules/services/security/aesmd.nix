@@ -16,10 +16,6 @@ let
       [ "" ]
     )
   );
-
-  toSnakeCase = replaceStrings upperChars (map (s: "_${s}") lowerChars);
-  qcnlConfig = builtins.toJSON (mapAttrs' (name: value: nameValuePair (toSnakeCase name) value) (filterAttrs (n: v: !isNull v) cfg.qcnl.settings));
-  qcnlConfigFile = pkgs.writeText "sgx_default_qcnl.conf" qcnlConfig;
 in
 {
   options.services.aesmd = {
@@ -69,8 +65,8 @@ in
     };
     qcnl.settings = mkOption {
       description = "QCNL configuration";
-      default = { };
-      type = types.submodule {
+      default = null;
+      type = with types; nullOr (submodule {
         options.pccsUrl = mkOption {
           type = with types; nullOr str;
           default = null;
@@ -169,7 +165,7 @@ in
             But the default PCCS implementation just ignores them.
           '';
         };
-      };
+      });
     };
   };
 
@@ -257,9 +253,15 @@ in
             builtins.storeDir
             # Hardcoded path AESM_CONFIG_FILE in psw/ae/aesm_service/source/utils/aesm_config.cpp
             "${aesmdConfigFile}:/etc/aesmd.conf"
+          ]
             # Hardcoded path in qcnl https://github.com/intel/SGXDataCenterAttestationPrimitives/blob/68a77a852cd911a44a97733aec870e9bd93a3b86/QuoteGeneration/qcnl/linux/qcnl_config_impl.cpp#L112
+          ++ optional (!isNull cfg.qcnl.settings) (let
+            toSnakeCase = replaceStrings upperChars (map (s: "_${s}") lowerChars);
+            qcnlConfig = builtins.toJSON (mapAttrs' (name: value: nameValuePair (toSnakeCase name) value) (filterAttrs (n: v: !isNull v) cfg.qcnl.settings));
+            qcnlConfigFile = pkgs.writeText "sgx_default_qcnl.conf" qcnlConfig;
+          in
             "${qcnlConfigFile}:/etc/sgx_default_qcnl.conf"
-          ];
+          );
           BindPaths = [
             # Hardcoded path CONFIG_SOCKET_PATH in psw/ae/aesm_service/source/core/ipc/SocketConfig.h
             "%t/aesmd:/var/run/aesmd"
