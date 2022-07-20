@@ -56,6 +56,13 @@ in {
           Whether the EC2 instance is using EFI.
         '';
       };
+      ena = lib.mkOption {
+        default = true;
+        type = types.bool;
+        description = ''
+          Whether the EC2 instance should have ENA enabled.
+        '';
+      };
     };
   };
 

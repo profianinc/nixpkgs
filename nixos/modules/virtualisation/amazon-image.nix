@@ -37,7 +37,7 @@ in
       { assertion = cfg.efi -> cfg.hvm;
         message = "EC2 instances using EFI must be HVM instances.";
       }
-      { assertion = versionOlder config.boot.kernelPackages.kernel.version "5.17";
+      { assertion = cfg.ena -> versionOlder config.boot.kernelPackages.kernel.version "5.17";
         message = "ENA driver fails to build with kernel >= 5.17";
       }
     ];
@@ -61,11 +61,12 @@ in
 
     boot.zfs.devNodes = mkIf cfg.zfs.enable "/dev/";
 
-    boot.extraModulePackages = [
-      config.boot.kernelPackages.ena
-    ];
+    boot.extraModulePackages = optional cfg.ena config.boot.kernelPackages.ena;
     boot.initrd.kernelModules = [ "xen-blkfront" "xen-netfront" ];
-    boot.initrd.availableKernelModules = [ "ixgbevf" "ena" "nvme" ];
+    boot.initrd.availableKernelModules = [
+      "ixgbevf"
+      "nvme"
+    ] ++ optional cfg.ena "ena";
     boot.kernelParams = mkIf cfg.hvm [ "console=ttyS0,115200n8" "random.trust_cpu=on" ];
 
     # Prevent the nouveau kernel module from being loaded, as it
