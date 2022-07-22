@@ -4,13 +4,13 @@
 with lib;
 
 buildLinux (args // rec {
-  version = "5.19-rc5-enarx-5";
-  modDirVersion = "5.19.0-rc5-next-20220706";
+  version = "5.19-rc7-enarx-1";
+  modDirVersion = "5.19.0-rc7";
   extraMeta.branch = lib.versions.majorMinor version;
 
   src = builtins.fetchTarball {
     url = "https://github.com/enarx/linux/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "10z9qsyav0q2xyv9mjk9r64yw58pk3xcangwaz1n2gy5k8g68a9i";
+    sha256 = "0y2yqimvgmj3y3vjczslw5hcj37pkb9dxkcv3c507vp6y346h292";
   };
 
   structuredExtraConfig = with lib.kernel; {
