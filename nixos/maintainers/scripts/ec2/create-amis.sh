@@ -282,7 +282,6 @@ upload_image() {
         local extra_flags=(
             --root-device-name /dev/xvda
             --sriov-net-support simple
-            --ena-support
             --virtualization-type hvm
         )
 
