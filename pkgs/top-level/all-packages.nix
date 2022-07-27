@@ -9772,6 +9772,10 @@ with pkgs;
 
   rarian = callPackage ../development/libraries/rarian { };
 
+  rathole = callPackage ../tools/networking/rathole {
+    inherit (darwin.apple_sdk.frameworks) Security;
+  };
+
   ratman = callPackage ../tools/networking/ratman { };
 
   ratools = callPackage ../tools/networking/ratools { };

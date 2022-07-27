@@ -10,6 +10,7 @@ jobs:
       matrix:
         package:
         - linuxPackages_enarx.kernel
+        - rathole
         - sgx-psw
     steps:
     - uses: actions/checkout@v3
