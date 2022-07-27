@@ -5,12 +5,21 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build:
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        package:
+        output:
         - linuxPackages_enarx.kernel
         - sgx-psw
+        - rathole
+        os:
+        - ubuntu-20.04
+        - macos-latest
+        exclude:
+          - output: sgx-psw
+            os: macos-latest
+          - output: linuxPackages_enarx.kernel
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
     - uses: cachix/install-nix-action@v17
@@ -18,5 +27,5 @@ jobs:
       with:
         name: enarx
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    - name: Build ${{ matrix.package }}
-      run: nix build -L -f . '${{ matrix.package }}'
+    - name: Build ${{ matrix.output }}
+      run: nix build -L '.#${{ matrix.output }}'
