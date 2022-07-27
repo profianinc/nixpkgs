@@ -1,5 +1,5 @@
 # Adapted from linux-testing
-{ lib, buildLinux, ... } @ args:
+{ lib, stdenv, fetchFromGitHub, buildLinux, ... } @ args:
 
 with lib;
 
@@ -8,9 +8,15 @@ buildLinux (args // rec {
   modDirVersion = "5.19.0-rc7";
   extraMeta.branch = lib.versions.majorMinor version;
 
-  src = builtins.fetchTarball {
-    url = "https://github.com/enarx/linux/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "0y2yqimvgmj3y3vjczslw5hcj37pkb9dxkcv3c507vp6y346h292";
+  src = fetchFromGitHub {
+    owner = "enarx";
+    repo = "linux";
+    rev = "v${version}";
+    sha256 =
+      # Workaround for https://github.com/NixOS/nix/issues/6837
+      if stdenv.isDarwin
+      then "1alj7xic5dj9bsy9y26pk00fwizwvladny4zlm24rs4hc8fh6p6k"
+      else "0y2yqimvgmj3y3vjczslw5hcj37pkb9dxkcv3c507vp6y346h292";
   };
 
   structuredExtraConfig = with lib.kernel; {
