@@ -9,6 +9,7 @@ jobs:
       matrix:
         output:
         - linuxPackages_enarx.kernel
+        - rathole
         - sgx-psw
         - rathole
         os:
