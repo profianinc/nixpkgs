@@ -108,8 +108,8 @@
     name = "enarx";
     patch = fetchpatch {
       name = "${name}.patch";
-      url = "https://github.com/enarx/linux/compare/e7d6987e09a328d4a949701db40ef63fbb970670..v5.18-rc3-enarx-6.patch";
-      sha256 = "sha256-YOEgsrRHb0S7tLEXi32J5dcMc1OuGuc5Lq4uv5MwkNk=";
+      url = "https://github.com/enarx/linux/compare/v5.19..v5.19-enarx-4.patch";
+      sha256 = "sha256-MdkJUHAGtVnFQRu3t8EtLjk8ywCGU82SoEi39MDyjNw=";
     };
   };
 }
