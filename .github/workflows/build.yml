@@ -10,9 +10,7 @@ jobs:
         output:
         - kernelPatches.enarx.patch
         - linuxPackages_enarx.kernel
-        - rathole
         - sgx-psw
-        - rathole
         os:
         - ubuntu-20.04
         - macos-latest
