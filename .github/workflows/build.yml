@@ -8,6 +8,7 @@ jobs:
     strategy:
       matrix:
         output:
+        - kernelPatches.enarx.patch
         - linuxPackages_enarx.kernel
         - rathole
         - sgx-psw
