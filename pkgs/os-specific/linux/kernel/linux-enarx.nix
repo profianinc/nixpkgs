@@ -4,8 +4,8 @@
 with lib;
 
 buildLinux (args // rec {
-  version = "5.19-rc7-enarx-1";
-  modDirVersion = "5.19.0-rc7";
+  version = "5.19-enarx-4";
+  modDirVersion = "5.19.0";
   extraMeta.branch = lib.versions.majorMinor version;
 
   src = fetchFromGitHub {
@@ -15,8 +15,8 @@ buildLinux (args // rec {
     sha256 =
       # Workaround for https://github.com/NixOS/nix/issues/6837
       if stdenv.isDarwin
-      then "1alj7xic5dj9bsy9y26pk00fwizwvladny4zlm24rs4hc8fh6p6k"
-      else "0y2yqimvgmj3y3vjczslw5hcj37pkb9dxkcv3c507vp6y346h292";
+      then "1alj7xic5dj9csy9y26pk00fwizwvladny4zlm24rs4hc8fh6p6k"
+      else "sha256-TdEB2GYwBHPI4YTdYzFOdgF52GqSdvnRWSJIrMYXOVE=";
   };
 
   structuredExtraConfig = with lib.kernel; {
