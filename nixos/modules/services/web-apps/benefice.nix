@@ -14,7 +14,6 @@ with lib; let
 
   conf.toml =
     ''
-      command = "${command}"
       oidc-client = "${cfg.oidc.client}"
       oidc-issuer = "${cfg.oidc.issuer}"
       url = "https://${fqdn}"
