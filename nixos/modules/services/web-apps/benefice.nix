@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  options,
   pkgs,
   ...
 }:
@@ -10,10 +11,9 @@ with lib; let
   # TODO: Make FQDN configurable
   fqdn = config.networking.fqdn;
 
-  command = "${config.services.enarx.package}/bin/enarx";
-
   conf.toml =
     ''
+      oci-command = "${cfg.oci.command}"
       oidc-client = "${cfg.oidc.client}"
       oidc-issuer = "${cfg.oidc.issuer}"
       url = "https://${fqdn}"
@@ -53,15 +53,22 @@ in {
       example = "https://auth.example.com";
       description = "OpenID Connect issuer URL.";
     };
+    enarx.backend = options.services.enarx.backend;
+    oci.backend = mkOption {
+      type = with types; nullOr (enum ["docker" "podman"]);
+      default = "docker";
+      example = null;
+      description = "OCI container engine to use. If <literal>null</literal>, <option>services.benefice.oci.command</option> must be set.";
+    };
+    oci.command = mkOption {
+      type = types.path;
+      description = "OCI container engine command to use. This option must be set if and only if <option>services.benefice.oci.backend</option> is <literal>null</literal>.";
+    };
   };
 
   config = mkIf cfg.enable (mkMerge [
     {
       assertions = [
-        {
-          assertion = config.services.enarx.enable;
-          message = "Enarx support is not enabled";
-        }
         {
           assertion = config.services.nginx.enable;
           message = "Nginx service is not enabled";
@@ -70,8 +77,6 @@ in {
 
       environment.systemPackages = [
         cfg.package
-
-        config.services.enarx.package
       ];
 
       services.nginx.virtualHosts.${fqdn} = {
@@ -118,7 +123,7 @@ in {
       systemd.services.benefice.serviceConfig.SystemCallArchitectures = "native";
       systemd.services.benefice.serviceConfig.Type = "exec";
       systemd.services.benefice.serviceConfig.UMask = "0077";
-      systemd.services.benefice.unitConfig.AssertFileIsExecutable = [command];
+      systemd.services.benefice.unitConfig.AssertFileIsExecutable = [cfg.oci.command];
       systemd.services.benefice.unitConfig.AssertPathExists =
         [
           configFile
@@ -127,10 +132,27 @@ in {
       systemd.services.benefice.wantedBy = ["multi-user.target"];
       systemd.services.benefice.wants = ["network-online.target"];
 
-      # TODO: Use `enarx@` service to launch workloads and remove these options
-      systemd.services.benefice.environment.ENARX_BACKEND = config.services.enarx.backend;
+      systemd.services.benefice.environment.ENARX_BACKEND = cfg.enarx.backend;
     }
-    (mkIf (config.services.enarx.backend == null) {
+    (mkIf (cfg.oci.backend == "docker") {
+      assertions = [
+        {
+          assertion = config.virtualisation.docker.enable;
+          message = "Docker support is not enabled";
+        }
+      ];
+      services.benefice.oci.command = "${config.virtualisation.docker.package}/bin/docker";
+    })
+    (mkIf (cfg.oci.backend == "podman") {
+      assertions = [
+        {
+          assertion = config.virtualisation.podman.enable;
+          message = "Podman support is not enabled";
+        }
+      ];
+      services.benefice.oci.command = "${pkgs.podman}/bin/podman";
+    })
+    (mkIf (cfg.enarx.backend == null) {
       systemd.services.benefice.serviceConfig.DeviceAllow = [
         "/dev/kvm rw"
         "/dev/sev rw"
@@ -138,12 +160,12 @@ in {
         "/dev/sgx_provision rw"
       ];
     })
-    (mkIf (config.services.enarx.backend == "sgx") {
+    (mkIf (cfg.enarx.backend == "sgx") {
       systemd.services.benefice.serviceConfig.DeviceAllow = ["/dev/sgx_enclave rw"];
       systemd.services.benefice.serviceConfig.SupplementaryGroups = ["sgx"];
       systemd.services.benefice.unitConfig.AssertPathIsReadWrite = ["/dev/sgx_enclave"];
     })
-    (mkIf (config.services.enarx.backend == "sev") {
+    (mkIf (cfg.enarx.backend == "sev") {
       systemd.services.benefice.serviceConfig.DeviceAllow = [
         "/dev/kvm rw"
         "/dev/sev rw"
