@@ -11,8 +11,10 @@ with lib; let
   # TODO: Make FQDN configurable
   fqdn = config.networking.fqdn;
 
+  ss = "${pkgs.iproute}/bin/ss";
   conf.toml =
     ''
+      ss-command = "${ss}"
       oci-command = "${cfg.oci.command}"
       oidc-client = "${cfg.oidc.client}"
       oidc-issuer = "${cfg.oidc.issuer}"
