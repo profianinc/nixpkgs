@@ -14,6 +14,7 @@ with lib; let
   ss = "${pkgs.iproute}/bin/ss";
   conf.toml =
     ''
+      runtime-dir = "/run/benefice"
       ss-command = "${ss}"
       oci-command = "${cfg.oci.command}"
       oidc-client = "${cfg.oidc.client}"
@@ -122,6 +123,7 @@ in {
       systemd.services.benefice.serviceConfig.RestrictNamespaces = true;
       systemd.services.benefice.serviceConfig.RestrictRealtime = true;
       systemd.services.benefice.serviceConfig.RestrictSUIDSGID = true;
+      systemd.services.benefice.serviceConfig.RuntimeDirectory = "benefice";
       systemd.services.benefice.serviceConfig.SystemCallArchitectures = "native";
       systemd.services.benefice.serviceConfig.Type = "exec";
       systemd.services.benefice.serviceConfig.UMask = "0077";
