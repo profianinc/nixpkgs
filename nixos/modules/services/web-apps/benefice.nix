@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  options,
   pkgs,
   ...
 }:
@@ -10,6 +9,22 @@ with lib; let
 
   # TODO: Make FQDN configurable
   fqdn = config.networking.fqdn;
+
+  devices = with cfg.enarx;
+    if backend == "kvm"
+    then [
+      "/dev/kvm"
+    ]
+    else if backend == "sgx"
+    then [
+      "/dev/sgx_enclave"
+    ]
+    else if backend == "sev"
+    then [
+      "/dev/kvm"
+      "/dev/sev"
+    ]
+    else [];
 
   ss = "${pkgs.iproute}/bin/ss";
   conf.toml =
@@ -21,7 +36,22 @@ with lib; let
       oidc-issuer = "${cfg.oidc.issuer}"
       url = "https://${fqdn}"
     ''
-    + optionalString (cfg.oidc.secretFile != null) ''oidc-secret = "${cfg.oidc.secretFile}"'';
+    + optionalString (length devices > 0) ''
+      devices = [ ${concatMapStringsSep "," (dev: ''"${dev}"'') devices} ]
+    ''
+    + optionalString (cfg.enarx.backend == "sev") ''
+      privileged = true
+      paths = [ "/var/cache/amd-sev" ]
+    ''
+    + optionalString (cfg.enarx.backend == "sgx") ''
+      paths = [ "/var/run/aesmd/aesm.socket" ]
+    ''
+    + optionalString (cfg.oci.image != null) ''
+      oci-image = "${cfg.oci.image}"
+    ''
+    + optionalString (cfg.oidc.secretFile != null) ''
+      oidc-secret = "${cfg.oidc.secretFile}"
+    '';
 
   configFile = pkgs.writeText "conf.toml" conf.toml;
 in {
@@ -56,7 +86,10 @@ in {
       example = "https://auth.example.com";
       description = "OpenID Connect issuer URL.";
     };
-    enarx.backend = options.services.enarx.backend;
+    enarx.backend = mkOption {
+      type = types.enum ["nil" "kvm" "sgx" "sev"];
+      description = "Enarx backend to use.";
+    };
     oci.backend = mkOption {
       type = with types; nullOr (enum ["docker" "podman"]);
       default = "docker";
@@ -67,21 +100,21 @@ in {
       type = types.path;
       description = "OCI container engine command to use. This option must be set if and only if <option>services.benefice.oci.backend</option> is <literal>null</literal>.";
     };
+    oci.image = mkOption {
+      type = with types; nullOr str;
+      default = null;
+      example = "enarx/enarx:0.6.3";
+      description = "OCI container image to use.";
+    };
   };
 
   config = mkIf cfg.enable (mkMerge [
     {
-      assertions = [
-        {
-          assertion = config.services.nginx.enable;
-          message = "Nginx service is not enabled";
-        }
-      ];
-
       environment.systemPackages = [
         cfg.package
       ];
 
+      services.nginx.enable = true;
       services.nginx.virtualHosts.${fqdn} = {
         enableACME = true;
         forceSSL = true;
@@ -93,10 +126,38 @@ in {
         "systemd-udevd.service"
       ];
       systemd.services.benefice.description = "Benefice";
+      systemd.services.benefice.environment.ENARX_BACKEND = cfg.enarx.backend;
       systemd.services.benefice.environment.RUST_LOG = cfg.log.level;
+      systemd.services.benefice.path = with pkgs; [
+        iproute
+      ];
+      systemd.services.benefice.serviceConfig.DeviceAllow = map (dev: "${dev} rw") devices;
+      systemd.services.benefice.serviceConfig.ExecStart = "${cfg.package}/bin/benefice @${configFile}";
+      systemd.services.benefice.serviceConfig.Restart = "always";
+      systemd.services.benefice.serviceConfig.Type = "exec";
+      systemd.services.benefice.serviceConfig.UMask = "0077";
+      systemd.services.benefice.unitConfig.AssertFileIsExecutable = [
+        cfg.oci.command
+        ss
+      ];
+      systemd.services.benefice.unitConfig.AssertPathExists =
+        [
+          configFile
+        ]
+        ++ optional (cfg.oidc.secretFile != null) cfg.oidc.secretFile;
+      systemd.services.benefice.unitConfig.AssertPathIsReadWrite = devices;
+      systemd.services.benefice.wantedBy = ["multi-user.target"];
+      systemd.services.benefice.wants = ["network-online.target"];
+    }
+    (mkIf (cfg.oci.backend == "docker") {
+      services.benefice.oci.command = "${config.virtualisation.docker.package}/bin/docker";
+
+      systemd.services.benefice.path = [
+        config.virtualisation.docker.package
+      ];
+      # TODO: Some of these should be moved to common config above
       systemd.services.benefice.serviceConfig.DynamicUser = true;
       systemd.services.benefice.serviceConfig.ExecPaths = ["/nix/store"];
-      systemd.services.benefice.serviceConfig.ExecStart = "${cfg.package}/bin/benefice @${configFile}";
       systemd.services.benefice.serviceConfig.InaccessiblePaths = "-/lost+found";
       systemd.services.benefice.serviceConfig.KeyringMode = "private";
       systemd.services.benefice.serviceConfig.LockPersonality = true;
@@ -119,67 +180,64 @@ in {
         "/var/tmp"
       ];
       systemd.services.benefice.serviceConfig.RemoveIPC = true;
-      systemd.services.benefice.serviceConfig.Restart = "always";
       systemd.services.benefice.serviceConfig.RestrictNamespaces = true;
       systemd.services.benefice.serviceConfig.RestrictRealtime = true;
       systemd.services.benefice.serviceConfig.RestrictSUIDSGID = true;
-      systemd.services.benefice.serviceConfig.RuntimeDirectory = "benefice";
       systemd.services.benefice.serviceConfig.SystemCallArchitectures = "native";
-      systemd.services.benefice.serviceConfig.Type = "exec";
-      systemd.services.benefice.serviceConfig.UMask = "0077";
-      systemd.services.benefice.unitConfig.AssertFileIsExecutable = [cfg.oci.command];
-      systemd.services.benefice.unitConfig.AssertPathExists =
-        [
-          configFile
-        ]
-        ++ optional (cfg.oidc.secretFile != null) cfg.oidc.secretFile;
-      systemd.services.benefice.wantedBy = ["multi-user.target"];
-      systemd.services.benefice.wants = ["network-online.target"];
 
-      systemd.services.benefice.environment.ENARX_BACKEND = cfg.enarx.backend;
-    }
-    (mkIf (cfg.oci.backend == "docker") {
-      assertions = [
-        {
-          assertion = config.virtualisation.docker.enable;
-          message = "Docker support is not enabled";
-        }
-      ];
-      services.benefice.oci.command = "${config.virtualisation.docker.package}/bin/docker";
+      virtualisation.docker.enable = true;
     })
     (mkIf (cfg.oci.backend == "podman") {
-      assertions = [
-        {
-          assertion = config.virtualisation.podman.enable;
-          message = "Podman support is not enabled";
-        }
-      ];
       services.benefice.oci.command = "${pkgs.podman}/bin/podman";
-    })
-    (mkIf (cfg.enarx.backend == null) {
-      systemd.services.benefice.serviceConfig.DeviceAllow = [
-        "/dev/kvm rw"
-        "/dev/sev rw"
-        "/dev/sgx_enclave rw"
-        "/dev/sgx_provision rw"
+
+      systemd.services.benefice.path = [
+        "/run/wrappers"
+        pkgs.podman
       ];
+      systemd.services.benefice.after = ["benefice-linger.service"];
+      systemd.services.benefice.serviceConfig.Group = config.users.groups.benefice.name;
+      systemd.services.benefice.serviceConfig.ReadWritePaths = [
+        config.users.users.benefice.home
+      ];
+      systemd.services.benefice.serviceConfig.User = config.users.users.benefice.name;
+
+      systemd.services.benefice-linger.serviceConfig.ExecStart = "${pkgs.systemd}/bin/loginctl enable-linger ${config.users.users.benefice.name}";
+      systemd.services.benefice-linger.serviceConfig.Type = "oneshot";
+      systemd.services.benefice-linger.wantedBy = ["multi-user.target"];
+
+      users.groups.benefice = {};
+      users.users.benefice.group = config.users.groups.benefice.name;
+      # this is required to create and set HOME for `podman`
+      users.users.benefice.isNormalUser = true;
+
+      virtualisation.podman.enable = true;
+    })
+    (mkIf (cfg.enarx.backend == "kvm") {
+      systemd.services.benefice.serviceConfig.SupplementaryGroups = [config.users.groups.kvm.name];
     })
     (mkIf (cfg.enarx.backend == "sgx") {
-      systemd.services.benefice.serviceConfig.DeviceAllow = ["/dev/sgx_enclave rw"];
-      systemd.services.benefice.serviceConfig.SupplementaryGroups = ["sgx"];
-      systemd.services.benefice.unitConfig.AssertPathIsReadWrite = ["/dev/sgx_enclave"];
+      assertions = [
+        {
+          assertion = cfg.oci.backend == "docker";
+          message = "Docker is the only OCI backend currently supported on SGX";
+        }
+      ];
+
+      systemd.services.benefice.serviceConfig.ReadWritePaths = [
+        "/var/run/aesmd/aesm.socket"
+      ];
+      systemd.services.benefice.serviceConfig.SupplementaryGroups = [config.users.groups.sgx.name];
     })
     (mkIf (cfg.enarx.backend == "sev") {
-      systemd.services.benefice.serviceConfig.DeviceAllow = [
-        "/dev/kvm rw"
-        "/dev/sev rw"
+      assertions = [
+        {
+          assertion = cfg.oci.backend == "docker";
+          message = "Docker is the only OCI backend currently supported on SEV";
+        }
       ];
+
       systemd.services.benefice.serviceConfig.LimitMEMLOCK = "8G";
       systemd.services.benefice.serviceConfig.SupplementaryGroups = [config.hardware.cpu.amd.sev.group];
-      systemd.services.benefice.unitConfig.AssertPathIsReadWrite = [
-        "/dev/kvm"
-        "/dev/sev"
-      ];
     })
   ]);
 }
