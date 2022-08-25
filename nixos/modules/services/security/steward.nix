@@ -9,9 +9,6 @@ with lib; let
 
   defaultStore = "/var/lib/steward";
 
-  # TODO: Make FQDN configurable
-  fqdn = config.networking.fqdn;
-
   conf.toml = ''
     crt = "${cfg.certFile}"
     key = "${cfg.keyFile}"
@@ -53,23 +50,9 @@ in {
 
   config = mkIf cfg.enable (mkMerge [
     {
-      assertions = [
-        {
-          assertion = config.services.nginx.enable;
-          message = "Nginx service is not enabled";
-        }
-      ];
-
       environment.systemPackages = [
         cfg.package
       ];
-
-      services.nginx.virtualHosts.${fqdn} = {
-        enableACME = true;
-        forceSSL = true;
-        http2 = false;
-        locations."/".proxyPass = "http://localhost:3000";
-      };
 
       systemd.services.steward.after = [
         "network-online.target"
