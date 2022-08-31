@@ -29,7 +29,6 @@ with lib; let
   ss = "${pkgs.iproute}/bin/ss";
   conf.toml =
     ''
-      runtime-dir = "/run/benefice"
       ss-command = "${ss}"
       oci-command = "${cfg.oci.command}"
       oidc-client = "${cfg.oidc.client}"
@@ -155,35 +154,6 @@ in {
       systemd.services.benefice.path = [
         config.virtualisation.docker.package
       ];
-      # TODO: Some of these should be moved to common config above
-      systemd.services.benefice.serviceConfig.DynamicUser = true;
-      systemd.services.benefice.serviceConfig.ExecPaths = ["/nix/store"];
-      systemd.services.benefice.serviceConfig.InaccessiblePaths = "-/lost+found";
-      systemd.services.benefice.serviceConfig.KeyringMode = "private";
-      systemd.services.benefice.serviceConfig.LockPersonality = true;
-      systemd.services.benefice.serviceConfig.NoExecPaths = ["/"];
-      systemd.services.benefice.serviceConfig.NoNewPrivileges = true;
-      systemd.services.benefice.serviceConfig.PrivateMounts = "yes";
-      systemd.services.benefice.serviceConfig.PrivateTmp = "yes";
-      systemd.services.benefice.serviceConfig.ProtectClock = true;
-      systemd.services.benefice.serviceConfig.ProtectControlGroups = "yes";
-      systemd.services.benefice.serviceConfig.ProtectHome = true;
-      systemd.services.benefice.serviceConfig.ProtectHostname = true;
-      systemd.services.benefice.serviceConfig.ProtectKernelLogs = true;
-      systemd.services.benefice.serviceConfig.ProtectKernelModules = true;
-      systemd.services.benefice.serviceConfig.ProtectKernelTunables = true;
-      systemd.services.benefice.serviceConfig.ProtectProc = "invisible";
-      systemd.services.benefice.serviceConfig.ProtectSystem = "strict";
-      systemd.services.benefice.serviceConfig.ReadOnlyPaths = ["/"];
-      systemd.services.benefice.serviceConfig.ReadWritePaths = [
-        "/tmp"
-        "/var/tmp"
-      ];
-      systemd.services.benefice.serviceConfig.RemoveIPC = true;
-      systemd.services.benefice.serviceConfig.RestrictNamespaces = true;
-      systemd.services.benefice.serviceConfig.RestrictRealtime = true;
-      systemd.services.benefice.serviceConfig.RestrictSUIDSGID = true;
-      systemd.services.benefice.serviceConfig.SystemCallArchitectures = "native";
 
       virtualisation.docker.enable = true;
     })
