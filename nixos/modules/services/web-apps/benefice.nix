@@ -51,11 +51,11 @@ with lib; let
     + optionalString (cfg.oidc.secretFile != null) ''
       oidc-secret = "${cfg.oidc.secretFile}"
     ''
-    + optionalString (cfg.sessionKey != null) ''
-      session-key = "${cfg.sessionKey}"
-    ''
     + optionalString (cfg.demoFqdn != null) ''
       demo-fqdn = "${cfg.demoFqdn}"
+    ''
+    + optionalString (cfg.sessionKey != null) ''
+      session-key = "${cfg.sessionKey}"
     '';
 
   configFile = pkgs.writeText "conf.toml" conf.toml;
