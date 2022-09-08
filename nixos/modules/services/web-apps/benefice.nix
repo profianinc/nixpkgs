@@ -50,6 +50,9 @@ with lib; let
     ''
     + optionalString (cfg.oidc.secretFile != null) ''
       oidc-secret = "${cfg.oidc.secretFile}"
+    ''
+    + optionalString (cfg.sessionKey != null) ''
+      session-key = "${cfg.sessionKey}"
     '';
 
   configFile = pkgs.writeText "conf.toml" conf.toml;
@@ -84,6 +87,12 @@ in {
       default = "https://auth.profian.com";
       example = "https://auth.example.com";
       description = "OpenID Connect issuer URL.";
+    };
+    sessionKey = mkOption {
+      type = with types; nullOr path;
+      default = null;
+      example = "/var/lib/benefice/session-secret";
+      description = "Path to session key secret file.";
     };
     enarx.backend = mkOption {
       type = types.enum ["nil" "kvm" "sgx" "sev"];
@@ -143,7 +152,8 @@ in {
         [
           configFile
         ]
-        ++ optional (cfg.oidc.secretFile != null) cfg.oidc.secretFile;
+        ++ optional (cfg.oidc.secretFile != null) cfg.oidc.secretFile
+        ++ optional (cfg.sessionKey != null) cfg.sessionKey;
       systemd.services.benefice.unitConfig.AssertPathIsReadWrite = devices;
       systemd.services.benefice.wantedBy = ["multi-user.target"];
       systemd.services.benefice.wants = ["network-online.target"];
