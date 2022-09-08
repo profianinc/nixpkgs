@@ -53,12 +53,21 @@ with lib; let
     ''
     + optionalString (cfg.sessionKey != null) ''
       session-key = "${cfg.sessionKey}"
+    ''
+    + optionalString (cfg.demoFqdn != null) ''
+      demo-fqdn = "${cfg.demoFqdn}"
     '';
 
   configFile = pkgs.writeText "conf.toml" conf.toml;
 in {
   options.services.benefice = {
     enable = mkEnableOption "Benefice service.";
+    demoFqdn = mkOption {
+      type = with types; nullOr str;
+      default = null;
+      example = "benefice.cloud";
+      description = "Demo FQDN.";
+    };
     package = mkOption {
       type = types.package;
       default = pkgs.benefice;
