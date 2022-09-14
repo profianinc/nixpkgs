@@ -30,6 +30,11 @@ in {
       example = "debug";
       description = "Log level to use, if unset the default value is used.";
     };
+    log.json = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to use JSON logging.";
+    };
     certFile = mkOption {
       type = types.path;
       description = ''
@@ -97,5 +102,8 @@ in {
       systemd.services.steward.wantedBy = ["multi-user.target"];
       systemd.services.steward.wants = ["network-online.target"];
     }
+    (mkIf (cfg.log.json) {
+      systemd.services.steward.environment.RUST_LOG_JSON = "true";
+    })
   ]);
 }
