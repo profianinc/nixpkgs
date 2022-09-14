@@ -52,6 +52,11 @@ in {
       example = "debug";
       description = "Log level to use, if unset the default value is used.";
     };
+    log.json = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to use JSON logging.";
+    };
     oidc.client = mkOption {
       type = types.str;
       example = "2vq9XnQgcGZ9JCxsGERuGURYIld3mcIh";
@@ -210,6 +215,9 @@ in {
       systemd.services.drawbridge-store.serviceConfig.Type = "oneshot";
       systemd.services.drawbridge-store.serviceConfig.UMask = "0777";
       systemd.services.drawbridge-store.wantedBy = ["drawbridge.service"];
+    })
+    (mkIf (cfg.log.json) {
+      systemd.services.drawbridge.environment.RUST_LOG_JSON = "true";
     })
   ]);
 }

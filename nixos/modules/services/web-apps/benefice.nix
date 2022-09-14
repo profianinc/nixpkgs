@@ -80,6 +80,11 @@ in {
       example = "debug";
       description = "Log level to use, if unset the default value is used.";
     };
+    log.json = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to use JSON logging.";
+    };
     oidc.client = mkOption {
       type = types.str;
       example = "23Lt09AjF8HpUeCCwlfhuV34e2dKD1MH";
@@ -227,6 +232,9 @@ in {
 
       systemd.services.benefice.serviceConfig.LimitMEMLOCK = "8G";
       systemd.services.benefice.serviceConfig.SupplementaryGroups = [config.hardware.cpu.amd.sev.group];
+    })
+    (mkIf (cfg.log.json) {
+      systemd.services.benefice.environment.RUST_LOG_JSON = "true";
     })
   ]);
 }
