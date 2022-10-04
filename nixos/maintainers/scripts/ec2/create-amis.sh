@@ -119,8 +119,8 @@ case "$image_system" in
         exit 1
 esac
 
-image_name="NixOS-${image_label}-${image_system}"
-image_description="NixOS ${image_label} ${image_system}"
+image_name="Enarx NixOS-${image_label}-${image_system}"
+image_description="Enarx NixOS ${image_label} ${image_system}"
 
 log "Image Details:"
 log " Name: $image_name"
