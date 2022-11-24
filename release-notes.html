@@ -1034,18 +1034,18 @@
           <a class="link" href="https://miller.readthedocs.io/en/latest/new-in-miller-6" target="_top">What’s
           new in Miller 6</a>.
         </p></li><li class="listitem"><p>
-          MultiMC has been replaced with the fork PolyMC due to upstream
-          developers being hostile to 3rd party package maintainers.
-          PolyMC removes all MultiMC branding and is aimed at providing
-          proper 3rd party packages like the one contained in Nixpkgs.
-          This change affects the data folder where game instances and
-          other save and configuration files are stored. Users with
-          existing installations should rename
+          MultiMC has been replaced with the fork PrismLauncher due to
+          upstream developers being hostile to 3rd party package
+          maintainers. PrismLauncher removes all MultiMC branding and is
+          aimed at providing proper 3rd party packages like the one
+          contained in Nixpkgs. This change affects the data folder
+          where game instances and other save and configuration files
+          are stored. Users with existing installations should rename
           <code class="literal">~/.local/share/multimc</code> to
-          <code class="literal">~/.local/share/polymc</code>. The main config
-          file’s path has also moved from
+          <code class="literal">~/.local/share/PrismLauncher</code>. The main
+          config file’s path has also moved from
           <code class="literal">~/.local/share/multimc/multimc.cfg</code> to
-          <code class="literal">~/.local/share/polymc/polymc.cfg</code>.
+          <code class="literal">~/.local/share/PrismLauncher/prismlauncher.cfg</code>.
         </p></li><li class="listitem"><p>
           <code class="literal">systemd-nspawn@.service</code> settings have been
           reverted to the default systemd behaviour. User namespaces are
@@ -9862,7 +9862,7 @@ in
         for more information.
       </p></li><li class="listitem"><p>
         Support for PXE netboot. See
-        <a class="xref" href="index.html#sec-booting-from-pxe" title="2.5.2. Booting from the “netboot” media (PXE)">Section 2.5.2, “Booting from the <span class="quote">“<span class="quote">netboot</span>”</span> media (PXE)”</a> for documentation.
+        <a class="xref" href="index.html#sec-booting-from-pxe" title="2.4.2. Booting from the “netboot” media (PXE)">Section 2.4.2, “Booting from the <span class="quote">“<span class="quote">netboot</span>”</span> media (PXE)”</a> for documentation.
       </p></li><li class="listitem"><p>
         X.org server 1.18. If you use the <code class="literal">ati_unfree</code>
         driver, 1.17 is still used due to an ABI incompatibility.
