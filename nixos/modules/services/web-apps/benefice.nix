@@ -43,7 +43,7 @@ with lib; let
       paths = [ "/var/cache/amd-sev" ]
     ''
     + optionalString (cfg.enarx.backend == "sgx") ''
-      paths = [ "/var/run/aesmd/aesm.socket" ]
+      paths = [ "/var/run/aesmd/aesm.socket", "/var/cache/intel-sgx" ]
     ''
     + optionalString (cfg.oci.image != null) ''
       oci-image = "${cfg.oci.image}"
